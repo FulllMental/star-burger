@@ -2,6 +2,7 @@ from django.http import JsonResponse
 from django.templatetags.static import static
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework import status
 
 from .models import Product, OrderDetails, OrderedProducts
 import json
@@ -62,6 +63,18 @@ def product_list_api(request):
 @api_view(['POST'])
 def register_order(request):
     new_order = request.data
+    # Должен быть +
+    # Не нул +
+    # не пустым
+    # список +
+
+    if not new_order.get('products'):
+        content = {'error': 'похоже что список ["products"] отсутствует или оказался пустым...'}
+        return Response(content, status=status.HTTP_404_NOT_FOUND)
+    if not isinstance(new_order['products'], list):
+        content = {'error': 'похоже вместо списка ["products"] получен другой формат данных...'}
+        return Response(content, status=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
     defaults = {
         'lastname': new_order.get('lastname', ''),
     }
