@@ -14,11 +14,11 @@ class OrderedProductsSerializer(ModelSerializer):
 
 
 class OrderDetailsSerializer(ModelSerializer):
-    products = OrderedProductsSerializer(many=True, allow_empty=False)
+    products = OrderedProductsSerializer(many=True, allow_empty=False, write_only=True)
 
     class Meta:
         model = OrderDetails
-        fields = ['firstname', 'lastname', 'phonenumber', 'address', 'products']
+        fields = ['id', 'firstname', 'lastname', 'phonenumber', 'address', 'products']
 
 
 def banners_list_api(request):
@@ -78,13 +78,13 @@ def register_order(request):
     serializer = OrderDetailsSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
-    order = OrderDetails.objects.get_or_create(firstname=serializer.validated_data['firstname'],
-                                               lastname=serializer.validated_data['lastname'],
-                                               phonenumber=serializer.validated_data['phonenumber'],
-                                               address=serializer.validated_data['address'])
+    order = OrderDetails.objects.create(firstname=serializer.validated_data['firstname'],
+                                        lastname=serializer.validated_data['lastname'],
+                                        phonenumber=serializer.validated_data['phonenumber'],
+                                        address=serializer.validated_data['address'])
 
     for product in serializer.validated_data['products']:
         OrderedProducts.objects.create(product=product['product'],
                                        quantity=product['quantity'],
-                                       order=order[0])
-    return Response(order[1])
+                                       order=order)
+    return Response(OrderDetailsSerializer(order).data)

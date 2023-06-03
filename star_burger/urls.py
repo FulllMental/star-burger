@@ -21,6 +21,7 @@ from django.shortcuts import render
 
 from . import settings
 
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', render, kwargs={'template_name': 'index.html'}, name='start_page'),
