@@ -157,6 +157,9 @@ class OrderedProducts(models.Model):
                               on_delete=models.CASCADE,
                               related_name='orders',
                               verbose_name='заказ',)
+    fixed_price = models.DecimalField(decimal_places=2,
+                                      max_digits=5,
+                                      validators=[MinValueValidator(0, 0)])
 
     class Meta:
         verbose_name = 'позиция в заказе'

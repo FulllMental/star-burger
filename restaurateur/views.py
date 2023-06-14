@@ -92,8 +92,7 @@ def view_orders(request):
     orders = OrderDetails.objects.all()
     order_items = []
     for order in orders:
-        order_summary = OrderedProducts.objects.filter(order=order).select_related('product')
-        total_price = sum([position.product.price * position.quantity for position in order_summary])
+        total_price = sum([ordered_product.fixed_price * ordered_product.quantity for ordered_product in order.orders.all()])
         order_items.append({'orders': order,
                             'price': total_price})
     return render(request, template_name='order_items.html', context={"order_items": order_items})
