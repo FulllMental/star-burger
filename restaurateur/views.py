@@ -89,10 +89,5 @@ def view_restaurants(request):
 
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
-    orders = OrderDetails.objects.all()
-    order_items = []
-    for order in orders:
-        total_price = sum([ordered_product.fixed_price * ordered_product.quantity for ordered_product in order.orders.all()])
-        order_items.append({'orders': order,
-                            'price': total_price})
-    return render(request, template_name='order_items.html', context={"order_items": order_items})
+    orders = OrderDetails.objects.with_price()
+    return render(request, template_name='order_items.html', context={"order_items": orders})
