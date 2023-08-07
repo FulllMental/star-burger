@@ -30,7 +30,7 @@
         <td>{{ item.address }}</td>
         <td>
           {% url 'admin:foodcartapp_orderdetails_change' object_id=item.id as edit_order_url %}
-          <a href='{{ edit_order_url }}'>Редактировать</a>
+          <a href='{{ edit_order_url }}?next={{ redirect_url|urlencode }}'>Редактировать</a>
         </td>
       </tr>
     {% endfor %}
