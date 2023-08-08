@@ -19,6 +19,7 @@
       <th>Клиент</th>
       <th>Телефон</th>
       <th>Адрес доставки</th>
+      <th>Комментарий</th>
       <th>Ссылка на админку</th>
     </tr>
 
@@ -31,6 +32,7 @@
           <td>{{ item.firstname }} {{ item.lastname }}</td>
           <td>{{ item.phonenumber }}</td>
           <td>{{ item.address }}</td>
+          <td>{{ item.comment }}</td>
           <td>
             {% url "admin:foodcartapp_orderdetails_change" object_id=item.id as edit_order_url %}
             <a href="{{ edit_order_url }}?next={{ redirect_url|urlencode }}">Редактировать</a>

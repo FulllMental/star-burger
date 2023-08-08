@@ -154,6 +154,12 @@ class OrderDetails(models.Model):
         default='1',
         db_index=True,
     )
+    comment = models.TextField(
+        verbose_name='комментарий к заказу',
+        null=True,
+        blank=True,
+        default=''
+    )
 
     class Meta:
         verbose_name = 'заказ'
