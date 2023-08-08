@@ -132,6 +132,12 @@ class OrderDetailsQuerySet(models.QuerySet):
 
 
 class OrderDetails(models.Model):
+    order_status_choices = [
+        ('1', 'Не обработан'),
+        ('2', 'Не собран'),
+        ('3', 'Не доставлен'),
+        ('4', 'Доставлен'),
+    ]
     firstname = models.CharField(verbose_name='имя',
                                  max_length=150)
     lastname = models.CharField(verbose_name='фамилия',
@@ -142,6 +148,12 @@ class OrderDetails(models.Model):
     address = models.CharField(verbose_name='адрес',
                                max_length=150,)
     objects = OrderDetailsQuerySet.as_manager()
+    status = models.CharField(
+        max_length=2,
+        choices=order_status_choices,
+        default='1',
+        db_index=True,
+    )
 
     class Meta:
         verbose_name = 'заказ'
