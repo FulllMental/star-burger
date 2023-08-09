@@ -139,6 +139,10 @@ class OrderDetails(models.Model):
         ('3', 'Не доставлен'),
         ('4', 'Доставлен'),
     ]
+    payment_method_choices = [
+        ('CS', 'Наличностью'),
+        ('EL', 'Электронно'),
+    ]
     firstname = models.CharField(verbose_name='имя',
                                  max_length=150)
     lastname = models.CharField(verbose_name='фамилия',
@@ -149,12 +153,18 @@ class OrderDetails(models.Model):
     address = models.CharField(verbose_name='адрес',
                                max_length=150,)
     objects = OrderDetailsQuerySet.as_manager()
-    status = models.CharField(
-        max_length=2,
-        choices=order_status_choices,
-        default='1',
-        db_index=True,
-    )
+    status = models.CharField(verbose_name='статус заказа',
+                              max_length=2,
+                              choices=order_status_choices,
+                              default='1',
+                              db_index=True,
+                              )
+    payment_method = models.CharField(verbose_name='метод оплаты',
+                              max_length=2,
+                              choices=payment_method_choices,
+                              default='CS',
+                              db_index=True,
+                              )
     comment = models.TextField(
         verbose_name='комментарий к заказу',
         null=True,
