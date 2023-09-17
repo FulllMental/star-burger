@@ -34,6 +34,17 @@
           <td>{{ item.firstname }} {{ item.lastname }}</td>
           <td>{{ item.phonenumber }}</td>
           <td>{{ item.address }}</td>
+          <td>
+              {% if item.chosen_restaurant %}
+                Заказ готовится в:<br>
+                {{ item.chosen_restaurant }}
+              {% else %}
+                <details>
+                  <summary>Может быть приготовлен в:</summary>
+                  {{ item.capable_restaurants | safe | linebreaksbr }}
+                </details>
+              {% endif %}
+          </td>
           <td>{{ item.comment }}</td>
           <td>
             {% url "admin:foodcartapp_orderdetails_change" object_id=item.id as edit_order_url %}

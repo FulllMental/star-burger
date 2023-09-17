@@ -165,12 +165,21 @@ class OrderDetails(models.Model):
                               default='CS',
                               db_index=True,
                               )
-    comment = models.TextField(
-        verbose_name='комментарий к заказу',
-        null=True,
-        blank=True,
-        default=''
-    )
+    capable_restaurants = models.CharField(verbose_name='Возможные рестораны',
+                                           max_length=150,
+                                           blank=True,
+                                           null=True)
+    chosen_restaurant = models.ForeignKey(Restaurant,
+                                          related_name='order_details',
+                                          verbose_name="ресторан",
+                                          on_delete=models.CASCADE,
+                                          null=True,
+                                          blank=True,
+                                          default='')
+    comment = models.TextField(verbose_name='комментарий к заказу',
+                               null=True,
+                               blank=True,
+                               default='')
     register_time = models.DateTimeField(verbose_name='время заказа',
                                          default=timezone.now())
     called_at = models.DateTimeField(verbose_name='время созвона',

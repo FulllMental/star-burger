@@ -5,7 +5,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.serializers import ModelSerializer
 
-from .models import Product, OrderDetails, OrderedProducts
+from .models import Product, OrderDetails, OrderedProducts, RestaurantMenuItem
 
 
 class OrderedProductsSerializer(ModelSerializer):
@@ -74,6 +74,25 @@ def product_list_api(request):
     })
 
 
+def get_all_restaurants(available_positions):
+    all_restaurants_position = available_positions.values_list('restaurant__name')
+    all_working_restaurants = set()
+    for restaurant_position in all_restaurants_position:
+        if restaurant_position[0] in all_restaurants_position:
+            continue
+        all_working_restaurants.add(f'<li>{restaurant_position[0]}</li>')
+    return all_working_restaurants
+
+
+def remove_incapable_restaurants(available_positions, all_possible_restaurants, product):
+    incapable_restaurants = available_positions.filter(product=list(product.items())[0][1], availability=False)
+    for incapable_restaurant in incapable_restaurants:
+        restaurant_to_remove = incapable_restaurant.restaurant.name
+        if restaurant_to_remove not in all_possible_restaurants:
+            continue
+        all_possible_restaurants.remove(restaurant_to_remove)
+
+
 @transaction.atomic()
 @api_view(['POST'])
 def register_order(request):
@@ -85,9 +104,19 @@ def register_order(request):
                                         phonenumber=serializer.validated_data['phonenumber'],
                                         address=serializer.validated_data['address'])
 
+    available_positions = RestaurantMenuItem.objects.select_related('restaurant').select_related('product')
+    all_restaurants = get_all_restaurants(available_positions)
+
     for product in serializer.validated_data['products']:
+        remove_incapable_restaurants(available_positions, all_restaurants, product)
         OrderedProducts.objects.create(product=product['product'],
                                        quantity=product['quantity'],
                                        order=order,
                                        fixed_price=product['product'].price)
+    if not all_restaurants:
+        capable_restaurants = 'Подходящих ресторанов не найдено'
+    else:
+        capable_restaurants = ''.join(all_restaurants)
+    order.capable_restaurants = capable_restaurants
+    order.save()
     return Response(OrderDetailsSerializer(order).data)
