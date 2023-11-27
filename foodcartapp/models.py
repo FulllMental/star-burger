@@ -165,10 +165,6 @@ class OrderDetails(models.Model):
                               default='CS',
                               db_index=True,
                               )
-    capable_restaurants = models.CharField(verbose_name='Возможные рестораны',
-                                           max_length=150,
-                                           blank=True,
-                                           null=True)
     chosen_restaurant = models.ForeignKey(Restaurant,
                                           related_name='order_details',
                                           verbose_name="ресторан",

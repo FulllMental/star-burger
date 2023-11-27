@@ -10,10 +10,11 @@
   <hr/>
   <br/>
   <br/>
-  <div class="container">
+  <div class="container-xl">
    <table class="table table-responsive">
     <tr>
       <th>ID заказа</th>
+      <th>Доступные рестики</th>
       <th>Цена заказа</th>
       <th>Способ оплаты</th>
       <th>Статус</th>
@@ -23,28 +24,28 @@
       <th>Комментарий</th>
       <th>Ссылка на админку</th>
     </tr>
-
     {% for item in order_items %}
       {% if item.status != '4' %}
         <tr>
           <td>{{ item.id }}</td>
-          <td>{{ item.total_price }}</td>
-          <td>{{ item.get_payment_method_display }}</td>
-          <td>{{ item.get_status_display }}</td>
-          <td>{{ item.firstname }} {{ item.lastname }}</td>
-          <td>{{ item.phonenumber }}</td>
-          <td>{{ item.address }}</td>
           <td>
               {% if item.chosen_restaurant %}
-                Заказ готовится в:<br>
-                {{ item.chosen_restaurant }}
+                Готовит {{ item.chosen_restaurant }}
               {% else %}
                 <details>
-                  <summary>Может быть приготовлен в:</summary>
-                  {{ item.capable_restaurants | safe | linebreaksbr }}
+                  <summary>Может быть приготовлен ресторанами:</summary>
+                  {% for capable_restaurant in item.capable_restaurants %}
+                    <p style="margin-left: 20px; font-size: 10pt;"> &#x2022; {{ capable_restaurant | safe }}</p>
+                  {% endfor %}
                 </details>
               {% endif %}
           </td>
+          <td>{{ item.total_price }} руб.</td>
+          <td>{{ item.get_payment_method_display }}</td>
+          <td>{{ item.get_status_display }}</td>
+          <td>{{ item.name }}</td>
+          <td>{{ item.phonenumber }}</td>
+          <td>{{ item.address }}</td>
           <td>{{ item.comment }}</td>
           <td>
             {% url "admin:foodcartapp_orderdetails_change" object_id=item.id as edit_order_url %}
