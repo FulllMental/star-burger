@@ -8,6 +8,7 @@ from django.contrib.auth.decorators import user_passes_test
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.views import View
+from django.conf import settings
 from dotenv import load_dotenv
 from geopy import distance
 
@@ -113,10 +114,7 @@ def fetch_coordinates(apikey, address):
 def get_restaurants_distance(order, working_restaurants, available_positions):
     if order.chosen_restaurant:
         return order.chosen_restaurant, []
-
-    load_dotenv()
-    apikey = os.getenv('GEOPY_API_KEY')
-
+    apikey = settings.GEOPY_API_KEY
     restaurants_to_choose = {}
     client_address = order.address
     client_coordinates = fetch_coordinates(apikey, client_address)
@@ -128,8 +126,11 @@ def get_restaurants_distance(order, working_restaurants, available_positions):
         capable_restaurants.pop(incapable_restaurant.restaurant.address)
     for capable_restaurant in capable_restaurants:
         restaurant_coordinates = fetch_coordinates(apikey, capable_restaurant)
-        distance_to_client = distance.distance(restaurant_coordinates, client_coordinates).km
-        restaurants_to_choose[capable_restaurants[capable_restaurant]] = round(distance_to_client, 2)
+        if not (restaurant_coordinates or client_coordinates):
+            restaurants_to_choose[capable_restaurants[capable_restaurant]] = 'Ошибка определения координат'
+        else:
+            distance_to_client = distance.distance(restaurant_coordinates, client_coordinates).km
+            restaurants_to_choose[capable_restaurants[capable_restaurant]] = f'{round(distance_to_client, 2)}км.'
     return [], sorted(restaurants_to_choose.items(), key=lambda x: x[1])
 
 
@@ -143,12 +144,12 @@ def view_orders(request):
     order_items = []
 
     for order in orders:
-        chosen_restaurant, available_restaurants = get_restaurants_distance(order, working_restaurants,
+        chosen_restaurant, available_restaurants = get_restaurants_distance(order,
+                                                                            working_restaurants,
                                                                             available_positions)
         if available_restaurants:
-            available_restaurants = [f'{available_restaurant[0]} - {available_restaurant[1]}км.' for
+            available_restaurants = [f'{available_restaurant[0]} - {available_restaurant[1]}' for
                                      available_restaurant in available_restaurants]
-        print(order.id, chosen_restaurant, available_restaurants)
         order_items.append({
             'id': order.id,
             'total_price': order.total_price,
