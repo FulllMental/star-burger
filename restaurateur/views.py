@@ -1,6 +1,3 @@
-import os
-
-import requests
 from django import forms
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
@@ -8,11 +5,10 @@ from django.contrib.auth.decorators import user_passes_test
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.views import View
-from django.conf import settings
-from dotenv import load_dotenv
 from geopy import distance
 
 from foodcartapp.models import Product, Restaurant, OrderDetails, RestaurantMenuItem
+from geocoder.models import Places
 
 
 class Login(forms.Form):
@@ -93,63 +89,66 @@ def view_restaurants(request):
     })
 
 
-def fetch_coordinates(apikey, address):
-    base_url = "https://geocode-maps.yandex.ru/1.x"
-    response = requests.get(base_url, params={
-        "geocode": address,
-        "apikey": apikey,
-        "format": "json",
-    })
-    response.raise_for_status()
-    found_places = response.json()['response']['GeoObjectCollection']['featureMember']
+# def get_restaurants_distance(order, all_places_coords, working_restaurants, available_menu_items):
+#     if order.chosen_restaurant:
+#         return order.chosen_restaurant, []
+#     restaurants_to_choose = {}
+#     client_coordinates = all_places_coords[order.address]
+#     capable_restaurants = working_restaurants.copy()
+#     products = order.ordered_products.all()
+#     for product in products:
+#         incapable_restaurants = available_menu_items.filter(product=product.product, availability=False)
+#     for incapable_restaurant in incapable_restaurants:
+#         capable_restaurants.pop(incapable_restaurant.restaurant.address)
+#     for capable_restaurant in capable_restaurants:
+#         restaurant_coordinates = all_places_coords[capable_restaurant.lower()]
+#         if not (restaurant_coordinates or client_coordinates):
+#             restaurants_to_choose[capable_restaurants[capable_restaurant]] = 'Ошибка определения координат'
+#         else:
+#             distance_to_client = distance.distance(restaurant_coordinates, client_coordinates).km
+#             restaurants_to_choose[capable_restaurants[capable_restaurant]] = f'{round(distance_to_client, 2)}км.'
+#     return [], sorted(restaurants_to_choose.items(), key=lambda x: x[1])
 
-    if not found_places:
-        return None
 
-    most_relevant = found_places[0]
-    lon, lat = most_relevant['GeoObject']['Point']['pos'].split(" ")
-    return lat, lon
-
-
-def get_restaurants_distance(order, working_restaurants, available_positions):
+def get_ready_restaurants(order, working_restaurants, available_menu_items):
     if order.chosen_restaurant:
         return order.chosen_restaurant, []
-    apikey = settings.GEOPY_API_KEY
-    restaurants_to_choose = {}
-    client_address = order.address
-    client_coordinates = fetch_coordinates(apikey, client_address)
     capable_restaurants = working_restaurants.copy()
     products = order.ordered_products.all()
     for product in products:
-        incapable_restaurants = available_positions.filter(product=product.product, availability=False)
+        incapable_restaurants = available_menu_items.filter(product=product.product, availability=False)
     for incapable_restaurant in incapable_restaurants:
         capable_restaurants.pop(incapable_restaurant.restaurant.address)
-    for capable_restaurant in capable_restaurants:
-        restaurant_coordinates = fetch_coordinates(apikey, capable_restaurant)
+    return [], capable_restaurants
+
+
+def get_restaurants_to_choose(order, all_places_coords, available_restaurants):
+    restaurants_to_choose = {}
+    client_coordinates = all_places_coords[order.address]
+    for capable_restaurant in available_restaurants:
+        restaurant_coordinates = all_places_coords[capable_restaurant.lower()]
         if not (restaurant_coordinates or client_coordinates):
-            restaurants_to_choose[capable_restaurants[capable_restaurant]] = 'Ошибка определения координат'
+            restaurants_to_choose[available_restaurants[capable_restaurant]] = 'Ошибка определения координат'
         else:
             distance_to_client = distance.distance(restaurant_coordinates, client_coordinates).km
-            restaurants_to_choose[capable_restaurants[capable_restaurant]] = f'{round(distance_to_client, 2)}км.'
-    return [], sorted(restaurants_to_choose.items(), key=lambda x: x[1])
+            restaurants_to_choose[available_restaurants[capable_restaurant]] = f'{round(distance_to_client, 2)}км.'
+    return sorted(restaurants_to_choose.items(), key=lambda x: x[1])
 
 
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
     orders = OrderDetails.objects.with_price().prefetch_related('ordered_products')
-    available_positions = RestaurantMenuItem.objects.select_related('restaurant').select_related('product')
-    working_restaurants = {position.restaurant.address: position.restaurant.name for position in available_positions}
-
+    places = Places.objects.all()
+    all_places_coords = {place.address: (place.lat, place.lon) for place in places}
+    available_menu_items = RestaurantMenuItem.objects.select_related('restaurant').select_related('product')
+    working_restaurants = {position.restaurant.address: position.restaurant.name for position in available_menu_items}
     redirect_url = request.get_full_path()
     order_items = []
-
     for order in orders:
-        chosen_restaurant, available_restaurants = get_restaurants_distance(order,
-                                                                            working_restaurants,
-                                                                            available_positions)
-        if available_restaurants:
-            available_restaurants = [f'{available_restaurant[0]} - {available_restaurant[1]}' for
-                                     available_restaurant in available_restaurants]
+        chosen_restaurant, available_restaurants = get_ready_restaurants(order, working_restaurants, available_menu_items)
+        restaurants_to_choose = get_restaurants_to_choose(order, all_places_coords, available_restaurants)
+        if restaurants_to_choose:
+            restaurants_to_choose = [f'{restaurant[0]} - {restaurant[1]}' for restaurant in restaurants_to_choose]
         order_items.append({
             'id': order.id,
             'total_price': order.total_price,
@@ -160,6 +159,7 @@ def view_orders(request):
             'address': order.address,
             'comment': order.comment,
             'chosen_restaurant': chosen_restaurant,
-            'capable_restaurants': available_restaurants,
+            'capable_restaurants': restaurants_to_choose,
         })
-    return render(request, template_name='order_items.html', context={"order_items": order_items, 'redirect_url': redirect_url})
+    return render(request, template_name='order_items.html', context={"order_items": order_items,
+                                                                      'redirect_url': redirect_url})
