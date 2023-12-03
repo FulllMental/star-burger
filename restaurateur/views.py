@@ -8,6 +8,7 @@ from django.views import View
 from geopy import distance
 
 from foodcartapp.models import Product, Restaurant, OrderDetails, RestaurantMenuItem
+from foodcartapp.views import add_new_place
 from geocoder.models import Places
 
 
@@ -89,25 +90,14 @@ def view_restaurants(request):
     })
 
 
-# def get_restaurants_distance(order, all_places_coords, working_restaurants, available_menu_items):
-#     if order.chosen_restaurant:
-#         return order.chosen_restaurant, []
-#     restaurants_to_choose = {}
-#     client_coordinates = all_places_coords[order.address]
-#     capable_restaurants = working_restaurants.copy()
-#     products = order.ordered_products.all()
-#     for product in products:
-#         incapable_restaurants = available_menu_items.filter(product=product.product, availability=False)
-#     for incapable_restaurant in incapable_restaurants:
-#         capable_restaurants.pop(incapable_restaurant.restaurant.address)
-#     for capable_restaurant in capable_restaurants:
-#         restaurant_coordinates = all_places_coords[capable_restaurant.lower()]
-#         if not (restaurant_coordinates or client_coordinates):
-#             restaurants_to_choose[capable_restaurants[capable_restaurant]] = 'Ошибка определения координат'
-#         else:
-#             distance_to_client = distance.distance(restaurant_coordinates, client_coordinates).km
-#             restaurants_to_choose[capable_restaurants[capable_restaurant]] = f'{round(distance_to_client, 2)}км.'
-#     return [], sorted(restaurants_to_choose.items(), key=lambda x: x[1])
+def client_coordinates_change_check(order, all_places_coords):
+    try:
+        client_coordinates = all_places_coords[order.address]
+    except KeyError:
+        add_new_place(order.address)
+        client_place = Places.objects.get(address=order.address)
+        client_coordinates = (client_place.lat, client_place.lon)
+    return client_coordinates
 
 
 def get_ready_restaurants(order, working_restaurants, available_menu_items):
@@ -122,9 +112,8 @@ def get_ready_restaurants(order, working_restaurants, available_menu_items):
     return [], capable_restaurants
 
 
-def get_restaurants_to_choose(order, all_places_coords, available_restaurants):
+def get_restaurants_to_choose(client_coordinates, all_places_coords, available_restaurants):
     restaurants_to_choose = {}
-    client_coordinates = all_places_coords[order.address]
     for capable_restaurant in available_restaurants:
         restaurant_coordinates = all_places_coords[capable_restaurant.lower()]
         if not (restaurant_coordinates or client_coordinates):
@@ -145,8 +134,9 @@ def view_orders(request):
     redirect_url = request.get_full_path()
     order_items = []
     for order in orders:
+        client_coordinates = client_coordinates_change_check(order, all_places_coords)
         chosen_restaurant, available_restaurants = get_ready_restaurants(order, working_restaurants, available_menu_items)
-        restaurants_to_choose = get_restaurants_to_choose(order, all_places_coords, available_restaurants)
+        restaurants_to_choose = get_restaurants_to_choose(client_coordinates, all_places_coords, available_restaurants)
         if restaurants_to_choose:
             restaurants_to_choose = [f'{restaurant[0]} - {restaurant[1]}' for restaurant in restaurants_to_choose]
         order_items.append({
