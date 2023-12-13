@@ -7,23 +7,24 @@ from django.http import JsonResponse
 from django.templatetags.static import static
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework.serializers import ModelSerializer
+# from rest_framework.serializers import ModelSerializer
 from geocoder.models import Places
 from .models import Product, OrderDetails, OrderedProducts
+from .serializers import OrderDetailsSerializer
 
 
-class OrderedProductsSerializer(ModelSerializer):
-    class Meta:
-        model = OrderedProducts
-        fields = ['product', 'quantity']
-
-
-class OrderDetailsSerializer(ModelSerializer):
-    products = OrderedProductsSerializer(many=True, allow_empty=False, write_only=True)
-
-    class Meta:
-        model = OrderDetails
-        fields = ['id', 'firstname', 'lastname', 'phonenumber', 'address', 'products']
+# class OrderedProductsSerializer(ModelSerializer):
+#     class Meta:
+#         model = OrderedProducts
+#         fields = ['product', 'quantity']
+#
+#
+# class OrderDetailsSerializer(ModelSerializer):
+#     products = OrderedProductsSerializer(many=True, allow_empty=False, write_only=True)
+#
+#     class Meta:
+#         model = OrderDetails
+#         fields = ['id', 'firstname', 'lastname', 'phonenumber', 'address', 'products']
 
 
 def banners_list_api(request):

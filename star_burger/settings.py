@@ -14,7 +14,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 GEOPY_API_KEY = env('GEOPY_API_KEY')
 SECRET_KEY = env('SECRET_KEY')
-DEBUG = env.bool('DEBUG', True)
+DEBUG = env.bool('DEBUG')
 
 if DEBUG:
     import mimetypes
