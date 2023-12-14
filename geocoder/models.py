@@ -7,6 +7,8 @@ class Places(models.Model):
         max_length=100,
         unique=True
     )
-    lat = models.FloatField(verbose_name='Координаты: широта')
-    lon = models.FloatField(verbose_name='Координаты: долгота')
+    lat = models.FloatField(verbose_name='Координаты: широта',
+                            null=True)
+    lon = models.FloatField(verbose_name='Координаты: долгота',
+                            null=True)
     request_datetime = models.DateTimeField(verbose_name='Дата запроса к API geopy')

@@ -140,6 +140,7 @@ class OrderDetails(models.Model):
         ('4', 'Доставлен'),
     ]
     payment_method_choices = [
+        ('ND', 'Не определен'),
         ('CS', 'Наличностью'),
         ('EL', 'Электронно'),
     ]
@@ -162,7 +163,7 @@ class OrderDetails(models.Model):
     payment_method = models.CharField(verbose_name='метод оплаты',
                               max_length=2,
                               choices=payment_method_choices,
-                              default='CS',
+                              default='ND',
                               db_index=True,
                               )
     chosen_restaurant = models.ForeignKey(Restaurant,
@@ -170,12 +171,9 @@ class OrderDetails(models.Model):
                                           verbose_name="ресторан",
                                           on_delete=models.CASCADE,
                                           null=True,
-                                          blank=True,
-                                          default='')
+                                          blank=True)
     comment = models.TextField(verbose_name='комментарий к заказу',
-                               null=True,
-                               blank=True,
-                               default='')
+                               blank=True)
     register_time = models.DateTimeField(verbose_name='время заказа',
                                          default=timezone.now())
     called_at = models.DateTimeField(verbose_name='время созвона',
@@ -201,7 +199,8 @@ class OrderedProducts(models.Model):
                                 on_delete=models.CASCADE,
                                 related_name='ordered_products',
                                 verbose_name='продукт',)
-    quantity = models.IntegerField(verbose_name='количество')
+    quantity = models.IntegerField(verbose_name='количество',
+                                   validators=[MinValueValidator(0)])
     order = models.ForeignKey('OrderDetails',
                               on_delete=models.CASCADE,
                               related_name='ordered_products',
