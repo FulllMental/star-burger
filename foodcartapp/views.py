@@ -10,7 +10,7 @@ from rest_framework.response import Response
 # from rest_framework.serializers import ModelSerializer
 from geocoder.models import Places
 from .models import Product, OrderDetails, OrderedProducts
-from .serializers import OrderDetailsSerializer
+from .serializers import OrderDetailsSerializer, OrderedProductsSerializer
 
 
 # class OrderedProductsSerializer(ModelSerializer):
@@ -110,21 +110,17 @@ def add_new_place(address):
 @transaction.atomic()
 @api_view(['POST'])
 def register_order(request):
-    serializer = OrderDetailsSerializer(data=request.data)
-    serializer.is_valid(raise_exception=True)
-    address = serializer.validated_data['address'].lower()
+    order_details_serializer = OrderDetailsSerializer(data=request.data)
+    order_details_serializer.is_valid(raise_exception=True)
+    address = order_details_serializer.validated_data['address'].lower()
     place_record = Places.objects.filter(address=address)
     if not place_record:
         add_new_place(address)
-
-    order = OrderDetails.objects.create(firstname=serializer.validated_data['firstname'],
-                                        lastname=serializer.validated_data['lastname'],
-                                        phonenumber=serializer.validated_data['phonenumber'],
-                                        address=address)
-
-    for product in serializer.validated_data['products']:
+    order = order_details_serializer.save()
+    for product in order_details_serializer.validated_data['products']:
         OrderedProducts.objects.create(product=product['product'],
                                        quantity=product['quantity'],
                                        order=order,
                                        fixed_price=product['product'].price)
+
     return Response(OrderDetailsSerializer(order).data)
