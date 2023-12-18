@@ -118,9 +118,5 @@ def register_order(request):
         add_new_place(address)
     order = order_details_serializer.save()
     for product in order_details_serializer.validated_data['products']:
-        OrderedProducts.objects.create(product=product['product'],
-                                       quantity=product['quantity'],
-                                       order=order,
-                                       fixed_price=product['product'].price)
-
+        OrderedProductsSerializer(data=product).create(validated_data=product, order=order)
     return Response(OrderDetailsSerializer(order).data)

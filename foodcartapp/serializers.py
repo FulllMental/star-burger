@@ -7,6 +7,12 @@ class OrderedProductsSerializer(ModelSerializer):
         model = OrderedProducts
         fields = ['product', 'quantity']
 
+    def create(self, validated_data, order):
+        OrderedProducts.objects.create(product=validated_data['product'],
+                                       quantity=validated_data['quantity'],
+                                       order=order,
+                                       fixed_price=validated_data['product'].price)
+
 
 class OrderDetailsSerializer(ModelSerializer):
     products = OrderedProductsSerializer(many=True, allow_empty=False, write_only=True)
